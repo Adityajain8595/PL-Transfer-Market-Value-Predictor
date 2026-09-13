@@ -1,0 +1,16 @@
+duckdb
+pandas
+pyarrow
+scikit-learn
+lightgbm
+mlflow
+prefect
+fastapi
+uvicorn
+pydantic
+evidently
+dvc
+pytest
+ruff
+kaggle
+python-dotenv

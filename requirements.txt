@@ -3,6 +3,8 @@ pandas
 pyarrow
 scikit-learn
 lightgbm
+catboost
+xgboost
 mlflow
 prefect
 fastapi

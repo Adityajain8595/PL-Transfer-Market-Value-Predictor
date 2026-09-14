@@ -106,7 +106,6 @@ def run_feature_pipeline():
             COALESCE(pcc.foot, 'unknown') AS dominant_foot,
             COALESCE(pcc.height_in_cm, 182) AS height_in_cm,
             pcc.club_name,
-            COALESCE(pcc.club_total_market_value, 0) AS club_total_market_value,
 
             aa.appearances_last_365d,
             aa.minutes_played_last_365d,

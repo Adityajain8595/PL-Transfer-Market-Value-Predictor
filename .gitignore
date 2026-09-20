@@ -2,12 +2,9 @@
 __pycache__/
 *.pyc
 .env
-data/raw/*
-data/intermediate/*
-data/processed/*
-!data/raw/.gitkeep
-!data/intermediate/.gitkeep
-!data/processed/.gitkeep
+# Data handled by DVC
+!*.dvc
+!**/*.dvc
 mlruns/
 models/*.joblib
 .pytest_cache/

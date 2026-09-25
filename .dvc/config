@@ -1,0 +1,4 @@
+[core]
+    remote = origin
+['remote "origin"']
+    url = https://dagshub.com/Adityajain8595/PL-Transfer-Market-Predictor.dvc

@@ -1,0 +1,129 @@
+{
+  "tests": [
+    {
+      "name": "Share of Drifted Columns",
+      "description": "The drift is detected for 66.7% features (10 out of 15). The test threshold is lt=0.25",
+      "status": "FAIL",
+      "group": "data_drift",
+      "parameters": {
+        "condition": {
+          "lt": 0.25
+        },
+        "features": {
+          "target_market_value_eur": {
+            "stattest": "Wasserstein distance (normed)",
+            "score": 0.475,
+            "threshold": 0.1,
+            "detected": true
+          },
+          "prediction": {
+            "stattest": "Wasserstein distance (normed)",
+            "score": 0.484,
+            "threshold": 0.1,
+            "detected": true
+          },
+          "age_at_valuation": {
+            "stattest": "Wasserstein distance (normed)",
+            "score": 0.225,
+            "threshold": 0.1,
+            "detected": true
+          },
+          "contrib_per_90_prior": {
+            "stattest": "Wasserstein distance (normed)",
+            "score": 0.16,
+            "threshold": 0.1,
+            "detected": true
+          },
+          "days_between_valuations": {
+            "stattest": "Wasserstein distance (normed)",
+            "score": 0.431,
+            "threshold": 0.1,
+            "detected": true
+          },
+          "european_minutes_played": {
+            "stattest": "Wasserstein distance (normed)",
+            "score": 0.128,
+            "threshold": 0.1,
+            "detected": true
+          },
+          "goal_contributions_per_90": {
+            "stattest": "Wasserstein distance (normed)",
+            "score": 0.081,
+            "threshold": 0.1,
+            "detected": false
+          },
+          "log_last_known_value": {
+            "stattest": "Wasserstein distance (normed)",
+            "score": 0.515,
+            "threshold": 0.1,
+            "detected": true
+          },
+          "minutes_prior_window": {
+            "stattest": "Wasserstein distance (normed)",
+            "score": 0.121,
+            "threshold": 0.1,
+            "detected": true
+          },
+          "minutes_since_last_val": {
+            "stattest": "Wasserstein distance (normed)",
+            "score": 0.12,
+            "threshold": 0.1,
+            "detected": true
+          },
+          "yellow_cards_since_val": {
+            "stattest": "Wasserstein distance (normed)",
+            "score": 0.021,
+            "threshold": 0.1,
+            "detected": false
+          },
+          "position": {
+            "stattest": "Jensen-Shannon distance",
+            "score": 0.016,
+            "threshold": 0.1,
+            "detected": false
+          },
+          "sub_position": {
+            "stattest": "Jensen-Shannon distance",
+            "score": 0.085,
+            "threshold": 0.1,
+            "detected": false
+          },
+          "dominant_foot": {
+            "stattest": "Jensen-Shannon distance",
+            "score": 0.045,
+            "threshold": 0.1,
+            "detected": false
+          },
+          "club_name": {
+            "stattest": "Jensen-Shannon distance",
+            "score": 0.336,
+            "threshold": 0.1,
+            "detected": true
+          }
+        }
+      }
+    },
+    {
+      "name": "Drift per Column",
+      "description": "The drift score for the feature **prediction** is 0.484. The drift detection method is Wasserstein distance (normed). The drift detection threshold is 0.15.",
+      "status": "FAIL",
+      "group": "data_drift",
+      "parameters": {
+        "stattest": "Wasserstein distance (normed)",
+        "score": 0.484,
+        "threshold": 0.15,
+        "detected": true,
+        "column_name": "prediction"
+      }
+    }
+  ],
+  "summary": {
+    "all_passed": false,
+    "total_tests": 2,
+    "success_tests": 0,
+    "failed_tests": 2,
+    "by_status": {
+      "FAIL": 2
+    }
+  }
+}

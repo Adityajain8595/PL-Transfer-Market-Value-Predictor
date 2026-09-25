@@ -1,0 +1,32 @@
+drift:
+  report_output_dir: "reports/drift"
+  html_report_filename: "data_drift_report.html"
+  json_summary_filename: "drift_summary.json"
+  
+  thresholds:
+    drift_share_threshold: 0.25
+    numerical:
+      stat_test: "wasserstein"
+      threshold: 0.10
+    categorical:
+      stat_test: "psi"
+      threshold: 0.20
+
+  features_to_monitor:
+    numerical:
+      - "age_at_valuation"
+      - "days_between_valuations"
+      - "log_last_known_value"
+      - "minutes_since_last_val"
+      - "european_minutes_played"
+      - "goal_contributions_per_90"
+      - "minutes_prior_window"
+      - "contrib_per_90_prior"
+      - "yellow_cards_since_val"
+    categorical:
+      - "position"
+      - "sub_position"
+      - "dominant_foot"
+      - "club_name"
+    prediction:
+      - "prediction"

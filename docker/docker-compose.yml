@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: pl-market-value-api
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    networks:
+      - mlops-network
+
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    container_name: pl-market-value-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - mlops-network
+
+  grafana:
+    image: grafana/grafana:10.3.3
+    container_name: pl-market-value-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    networks:
+      - mlops-network
+
+networks:
+  mlops-network:
+    driver: bridge

@@ -2,10 +2,20 @@
 __pycache__/
 *.pyc
 .env
+logs/
+.vscode/
 # Data handled by DVC
 !*.dvc
 !**/*.dvc
 mlruns/
+mlflow.db
 models/*.joblib
+!models/champion_model.joblib
 .pytest_cache/
 .ruff_cache/
+.benchmarks/
+catboost_info/
+airflow/*.db*
+airflow/logs/
+airflow/simple_auth_manager_passwords.json.generated
+*.egg-info/

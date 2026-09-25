@@ -1,19 +1,20 @@
 import logging
-import os
-from datetime import datetime
-from pathlib import Path
+from datetime import datetime, timezone
 
-LOGS_DIR = Path("logs")
+from src.utils.paths import LOGS_DIR
+
+# Ensure log directory
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
-LOG_FILE = f"{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.log"
-LOG_FILE_PATH = LOGS_DIR / LOG_FILE
+stamp = datetime.now(timezone.utc).strftime("%Y_%m_%d_%H_%M_%S")
+log_path = LOGS_DIR / f"{stamp}.log"
 
+# Logger configuration
 logging.basicConfig(
     format="[ %(asctime)s ] %(lineno)d %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
     handlers=[
-        logging.FileHandler(LOG_FILE_PATH),
+        logging.FileHandler(log_path),
         logging.StreamHandler()
     ]
 )

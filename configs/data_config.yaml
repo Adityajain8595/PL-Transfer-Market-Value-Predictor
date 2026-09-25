@@ -1,0 +1,43 @@
+raw_data:
+  dir: "data/raw"
+  required_files:
+    - "players.csv"
+    - "player_valuations.csv"
+    - "appearances.csv"
+    - "games.csv"
+    - "clubs.csv"
+
+processed_data:
+  output_dir: "data/processed"
+  parquet_filename: "features.parquet"
+
+filters:
+  competition_id: "GB1"
+  min_valuation_year: "2016-01-01"
+  raw_valuation_cutoff: "2014-01-01"
+  min_age: 15
+  max_age: 42
+  min_days_between: 30
+  max_days_between: 400
+
+rolling_split:
+  val_months: 12
+  test_months: 12
+
+features:
+  categorical:
+    - "position"
+    - "sub_position"
+    - "dominant_foot"
+    - "club_name"
+  numerical:
+    - "age_at_valuation"
+    - "days_between_valuations"
+    - "log_last_known_value"
+    - "minutes_since_last_val"
+    - "european_minutes_played"
+    - "goal_contributions_per_90"
+    - "minutes_prior_window"
+    - "contrib_per_90_prior"
+    - "yellow_cards_since_val"
+  target: "log_target_market_value"

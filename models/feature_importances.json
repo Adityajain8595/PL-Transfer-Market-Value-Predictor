@@ -1,0 +1,17 @@
+{
+  "age_at_valuation": 1403.0,
+  "days_between_valuations": 1274.0,
+  "log_last_known_value": 1161.0,
+  "minutes_since_last_val": 951.0,
+  "minutes_prior_window": 507.0,
+  "goal_contributions_per_90": 351.0,
+  "contrib_per_90_prior": 329.0,
+  "form_acceleration": 312.0,
+  "european_minutes_played": 228.0,
+  "goals_since_last_val": 145.0,
+  "yellow_cards_since_val": 104.0,
+  "assists_since_last_val": 70.0,
+  "sub_position_Centre-Forward": 55.0,
+  "position_Attack": 35.0,
+  "club_name_Chelsea FC": 29.0
+}

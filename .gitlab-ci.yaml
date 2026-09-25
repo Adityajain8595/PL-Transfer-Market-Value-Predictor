@@ -1,0 +1,40 @@
+stages:
+  - lint
+  - test
+  - quality_gate
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip/
+    - .venv/
+
+default:
+  image: python:3.10-slim
+  before_script:
+    - python -V
+    - python -m venv .venv
+    - source .venv/bin/activate
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+    - pip install -e . --no-deps
+
+lint_code:
+  stage: lint
+  script:
+    - ruff check src/ tests/ dags/
+
+run_unit_and_api_tests:
+  stage: test
+  script:
+    - pytest tests/test_data_pipeline.py tests/test_model_inference.py tests/test_drift.py -v
+
+model_performance_gate:
+  stage: quality_gate
+  script:
+    - pytest tests/test_model_eval_gate.py -v
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'

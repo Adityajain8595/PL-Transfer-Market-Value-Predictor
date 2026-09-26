@@ -32,9 +32,17 @@ jobs:
         run: |
           ruff check src/ tests/
 
-      - name: Execute Pytest Suite (Data Pipeline, API Inference, Drift)
+      - name: Execute Pytest Suite (Data Pipeline)
         run: |
-          python -m pytest tests/test_data_pipeline.py tests/test_model_inference.py tests/test_drift.py -v
+          python -m pytest tests/test_data_pipeline.py -v
+
+      - name: Execute Pytest Suite (API Inference)
+        run: |
+          python -m pytest tests/test_model_inference.py -v
+
+      - name: Execute Pytest Suite (Drift Monitoring)
+        run: |
+          python -m pytest tests/test_drift.py -v
 
       - name: Verify Model Evaluation Performance Gate
         run: |

@@ -304,18 +304,18 @@ if st.session_state.selected_player_id is None:
                 fig_pos = go.Figure(go.Bar(
                     x=pos_vals["position"],
                     y=pos_vals["val_m"],
-                    marker=dict(color=["#00f2fe", "#00FF87", "#3b82f6", "#a855f7"]),
+                    marker={"color": ["#00f2fe", "#00FF87", "#3b82f6", "#a855f7"]},
                     text=pos_vals["val_m"].apply(lambda v: f"€{v:.1f}M"),
                     textposition="auto"
                 ))
                 fig_pos.update_layout(
-                    title=dict(text="Average Market Valuation by Position (Active PL)", font=dict(color="#FFFFFF", size=13)),
+                    title={"text": "Average Market Valuation by Position (Active PL)", "font": {"color": "#FFFFFF", "size": 13}},
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
-                    xaxis=dict(tickfont=dict(color="#94A3B8"), showgrid=False),
-                    yaxis=dict(title=dict(text="Avg Valuation (€M)", font=dict(color="#94A3B8")), tickfont=dict(color="#94A3B8"), showgrid=True, gridcolor="rgba(255,255,255,0.08)"),
+                    xaxis={"tickfont": {"color": "#94A3B8"}, "showgrid": False},
+                    yaxis={"title": {"text": "Avg Valuation (€M)", "font": {"color": "#94A3B8"}}, "tickfont": {"color": "#94A3B8"}, "showgrid": True, "gridcolor": "rgba(255,255,255,0.08)"},
                     height=240,
-                    margin=dict(l=10, r=10, t=35, b=10)
+                    margin={"l": 10, "r": 10, "t": 35, "b": 10}
                 )
                 st.plotly_chart(fig_pos, use_container_width=True)
 
@@ -347,18 +347,18 @@ if st.session_state.selected_player_id is None:
                     x=chart_maes,
                     y=chart_names,
                     orientation="h",
-                    marker=dict(color=chart_colors),
+                    marker={"color": chart_colors},
                     text=[f"€{v:.3f}M" for v in chart_maes],
                     textposition="auto"
                 ))
                 fig_tourn.update_layout(
-                    title=dict(text="Tournament Arena: Validation MAE (Lower is Better)", font=dict(color="#FFFFFF", size=13)),
+                    title={"text": "Tournament Arena: Validation MAE (Lower is Better)", "font": {"color": "#FFFFFF", "size": 13}},
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
-                    xaxis=dict(title=dict(text="Validation MAE (€ Millions)", font=dict(color="#94A3B8")), tickfont=dict(color="#94A3B8"), showgrid=True, gridcolor="rgba(255,255,255,0.08)"),
-                    yaxis=dict(tickfont=dict(color="#F1F5F9"), autorange="reversed"),
+                    xaxis={"title": {"text": "Validation MAE (€ Millions)", "font": {"color": "#94A3B8"}}, "tickfont": {"color": "#94A3B8"}, "showgrid": True, "gridcolor": "rgba(255,255,255,0.08)"},
+                    yaxis={"tickfont": {"color": "#F1F5F9"}, "autorange": "reversed"},
                     height=240,
-                    margin=dict(l=10, r=10, t=35, b=10)
+                    margin={"l": 10, "r": 10, "t": 35, "b": 10}
                 )
                 st.plotly_chart(fig_tourn, use_container_width=True)
 
@@ -483,11 +483,14 @@ if st.session_state.selected_player_id is None:
     )
 
     # Detect click on table row
-    if event and event.selection and event.selection.rows:
-        clicked_idx = event.selection.rows[0]
-        selected_pid = int(filtered_catalog.iloc[clicked_idx]["player_id"])
-        st.session_state.selected_player_id = selected_pid
-        st.rerun()
+    selection = getattr(event, "selection", None)
+    if selection is not None:
+        selected_rows = selection.get("rows", []) if isinstance(selection, dict) else getattr(selection, "rows", [])
+        if selected_rows:
+            clicked_idx = selected_rows[0]
+            selected_pid = int(filtered_catalog.iloc[clicked_idx]["player_id"])
+            st.session_state.selected_player_id = selected_pid
+            st.rerun()
 
 
 # ==============================================================================
@@ -700,9 +703,9 @@ else:
         with s1:
             p_age = float(features["age_at_valuation"])
             sim_age = st.slider("Player Age", min_value=16.0, max_value=max(42.0, p_age + 2.0), value=p_age, step=0.25)
-            p_min = int(minutes if minutes > 0 else 1800)
+            p_min = minutes if minutes > 0 else 1800
             sim_minutes = st.number_input("Minutes Played", min_value=0, max_value=max(6500, p_min + 500), value=p_min, step=50)
-            p_euro = int(euro)
+            p_euro = euro
             sim_euro = st.number_input("European Minutes", min_value=0, max_value=max(2500, p_euro + 500), value=p_euro, step=50)
 
         with s2:
@@ -714,11 +717,11 @@ else:
             sim_club = st.selectbox("Transfer Club", options=club_list, index=c_idx)
 
         with s3:
-            p_goals = int(goals if goals > 0 else 5)
+            p_goals = goals if goals > 0 else 5
             sim_goals = st.number_input("Goals", min_value=0, max_value=max(70, p_goals + 10), value=p_goals, step=1)
-            p_assists = int(assists if assists > 0 else 3)
+            p_assists = assists if assists > 0 else 3
             sim_assists = st.number_input("Assists", min_value=0, max_value=max(45, p_assists + 10), value=p_assists, step=1)
-            p_yellows = int(yellows)
+            p_yellows = yellows
             sim_yellows = st.number_input("Yellow Cards", min_value=0, max_value=max(25, p_yellows + 5), value=p_yellows, step=1)
 
         sim_rate = round(((sim_goals + sim_assists) * 90.0) / sim_minutes, 2) if sim_minutes >= 90 else 0.0

@@ -89,21 +89,65 @@ def load_dataset_stats() -> dict:
 
 
 
+def build_catalog_from_parquet(fdf: pd.DataFrame) -> pd.DataFrame:
+    cat = fdf.sort_values(by="valuation_date", ascending=False).groupby("player_id").first().reset_index()
+    if "is_current_pl" in cat.columns:
+        cat = cat[cat["is_current_pl"] == True]
+    if "club_name" in cat.columns:
+        cat = cat[cat["club_name"].isin(CURRENT_2026_PL_CLUBS)]
+
+    cat["latest_recorded_val_eur"] = cat["target_market_value_eur"]
+    cat["latest_age"] = cat["age_at_valuation"]
+
+    meta_path = PROCESSED_DIR / "players_metadata.parquet"
+    if meta_path.exists():
+        try:
+            meta_df = duckdb.read_parquet(str(meta_path).replace("\\", "/")).df()
+            cat = cat.merge(meta_df, on="player_id", how="left")
+        except Exception as err:  # noqa: BLE001
+            logger.debug(f"Metadata parquet merge skipped: {err}")
+
+    if "image_url" not in cat.columns:
+        cat["image_url"] = ""
+    else:
+        cat["image_url"] = cat["image_url"].fillna("")
+
+    if "country_of_citizenship" not in cat.columns:
+        cat["country_of_citizenship"] = "Unknown"
+    else:
+        cat["country_of_citizenship"] = cat["country_of_citizenship"].fillna("Unknown")
+
+    cat = cat.sort_values(by="latest_recorded_val_eur", ascending=False).reset_index(drop=True)
+    return cat[[
+        "player_id", "player_name", "image_url", "country_of_citizenship",
+        "club_name", "position", "sub_position", "dominant_foot", "latest_age", "latest_recorded_val_eur"
+    ]]
+
+
+def get_player_metadata(player_id: int) -> tuple[str, str]:
+    meta_path = PROCESSED_DIR / "players_metadata.parquet"
+    if meta_path.exists():
+        try:
+            mdf = duckdb.read_parquet(str(meta_path).replace("\\", "/")).df()
+            matched = mdf[mdf["player_id"] == player_id]
+            if not matched.empty:
+                return (
+                    str(matched.iloc[0].get("image_url", "")),
+                    str(matched.iloc[0].get("country_of_citizenship", "Unknown"))
+                )
+        except Exception as err:  # noqa: BLE001
+            logger.debug(f"Player metadata lookup skipped: {err}")
+    return "", "Unknown"
+
+
 # Load active player catalog
 def load_catalog() -> pd.DataFrame:
     if not PLAYERS_PATH.exists() or not VALUATIONS_PATH.exists():
         if FEATURES_PATH.exists():
             fdf = load_features_df()
-            cat = fdf.sort_values(by="valuation_date", ascending=False).groupby("player_id").first().reset_index()
-            cat["latest_recorded_val_eur"] = cat["target_market_value_eur"]
-            cat["latest_age"] = cat["age_at_valuation"]
-            cat["image_url"] = ""
-            cat["country_of_citizenship"] = "Unknown"
-            return cat[[
-                "player_id", "player_name", "image_url", "country_of_citizenship",
-                "club_name", "position", "sub_position", "dominant_foot", "latest_age", "latest_recorded_val_eur"
-            ]]
+            return build_catalog_from_parquet(fdf)
         return pd.DataFrame()
+
 
     con = duckdb.connect(database=":memory:")
     p_path = str(PLAYERS_PATH).replace("\\", "/")
@@ -164,15 +208,7 @@ def load_catalog() -> pd.DataFrame:
         con.close()
         if FEATURES_PATH.exists():
             fdf = load_features_df()
-            cat = fdf.sort_values(by="valuation_date", ascending=False).groupby("player_id").first().reset_index()
-            cat["latest_recorded_val_eur"] = cat["target_market_value_eur"]
-            cat["latest_age"] = cat["age_at_valuation"]
-            cat["image_url"] = ""
-            cat["country_of_citizenship"] = "Unknown"
-            return cat[[
-                "player_id", "player_name", "image_url", "country_of_citizenship",
-                "club_name", "position", "sub_position", "dominant_foot", "latest_age", "latest_recorded_val_eur"
-            ]]
+            return build_catalog_from_parquet(fdf)
         return pd.DataFrame()
 
 
@@ -235,11 +271,12 @@ def get_player_features(player_id: int) -> dict:
             pdf = fdf[fdf["player_id"] == player_id]
             if not pdf.empty:
                 row = pdf.sort_values(by="valuation_date", ascending=False).iloc[0].to_dict()
+                img_url, citizenship = get_player_metadata(player_id)
                 return {
                     "player_id": player_id,
                     "player_name": str(row.get("player_name", "Unknown")),
-                    "image_url": "",
-                    "country_of_citizenship": "Unknown",
+                    "image_url": img_url,
+                    "country_of_citizenship": citizenship,
                     "club_name": str(row.get("club_name", "Unknown")),
                     "position": str(row.get("position", "Midfield")),
                     "sub_position": str(row.get("sub_position", "Central Midfield")),
@@ -340,11 +377,12 @@ def get_player_features(player_id: int) -> dict:
             pdf = fdf[fdf["player_id"] == player_id]
             if not pdf.empty:
                 row = pdf.sort_values(by="valuation_date", ascending=False).iloc[0].to_dict()
+                img_url, citizenship = get_player_metadata(player_id)
                 return {
                     "player_id": player_id,
                     "player_name": str(row.get("player_name", "Unknown")),
-                    "image_url": "",
-                    "country_of_citizenship": "Unknown",
+                    "image_url": img_url,
+                    "country_of_citizenship": citizenship,
                     "club_name": str(row.get("club_name", "Unknown")),
                     "position": str(row.get("position", "Midfield")),
                     "sub_position": str(row.get("sub_position", "Central Midfield")),

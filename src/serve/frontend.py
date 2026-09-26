@@ -319,7 +319,7 @@ if st.session_state.selected_player_id is None:
                     height=240,
                     margin={"l": 10, "r": 10, "t": 35, "b": 10}
                 )
-                st.plotly_chart(fig_pos, use_container_width=True)
+                st.plotly_chart(fig_pos, width="stretch")
 
         with tab_model:
             m_col1, m_col2 = st.columns([1.5, 1.1])
@@ -362,7 +362,7 @@ if st.session_state.selected_player_id is None:
                     height=240,
                     margin={"l": 10, "r": 10, "t": 35, "b": 10}
                 )
-                st.plotly_chart(fig_tourn, use_container_width=True)
+                st.plotly_chart(fig_tourn, width="stretch")
 
             with m_col2:
                 rmse_val = float(model_metrics.get("test_rmse", 5019762.0))
@@ -477,7 +477,7 @@ if st.session_state.selected_player_id is None:
             "Age": st.column_config.NumberColumn("Age", format="%.1f"),
         },
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         height=480
     )
 
@@ -637,7 +637,7 @@ else:
                 margin={"l": 20, "r": 20, "t": 20, "b": 20},
                 height=340
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         else:
             st.info("No recorded historical valuations.")
 
@@ -663,7 +663,7 @@ else:
                     "Growth": st.column_config.NumberColumn("Growth", format="%.1f%%"),
                 },
                 hide_index=True,
-                use_container_width=True,
+                width="stretch",
                 height=340
             )
         else:

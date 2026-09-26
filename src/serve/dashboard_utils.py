@@ -18,6 +18,13 @@ TOURNAMENT_PATH = MODELS_DIR / "tournament_metrics.json"
 FEATURES_PATH = PROCESSED_DIR / "features.parquet"
 
 
+def load_features_df() -> pd.DataFrame:
+    try:
+        return duckdb.read_parquet(str(FEATURES_PATH).replace("\\", "/")).df()
+    except Exception:  # noqa: BLE001
+        return pd.read_parquet(FEATURES_PATH)
+
+
 # Load champion model metrics
 def load_model_metrics() -> dict:
     if METRICS_PATH.exists():
@@ -49,7 +56,7 @@ def load_tournament_metrics() -> dict:
 def load_dataset_stats() -> dict:
     if FEATURES_PATH.exists():
         try:
-            df = pd.read_parquet(FEATURES_PATH)
+            df = load_features_df()
             dates = pd.to_datetime(df["valuation_date"])
             min_yr = dates.min().year
             max_yr = dates.max().year
@@ -86,7 +93,7 @@ def load_dataset_stats() -> dict:
 def load_catalog() -> pd.DataFrame:
     if not PLAYERS_PATH.exists() or not VALUATIONS_PATH.exists():
         if FEATURES_PATH.exists():
-            fdf = pd.read_parquet(FEATURES_PATH)
+            fdf = load_features_df()
             cat = fdf.sort_values(by="valuation_date", ascending=False).groupby("player_id").first().reset_index()
             cat["latest_recorded_val_eur"] = cat["target_market_value_eur"]
             cat["latest_age"] = cat["age_at_valuation"]
@@ -156,7 +163,7 @@ def load_catalog() -> pd.DataFrame:
         logger.warning(f"DuckDB catalog query failed, falling back to features.parquet: {err}")
         con.close()
         if FEATURES_PATH.exists():
-            fdf = pd.read_parquet(FEATURES_PATH)
+            fdf = load_features_df()
             cat = fdf.sort_values(by="valuation_date", ascending=False).groupby("player_id").first().reset_index()
             cat["latest_recorded_val_eur"] = cat["target_market_value_eur"]
             cat["latest_age"] = cat["age_at_valuation"]
@@ -173,7 +180,7 @@ def load_catalog() -> pd.DataFrame:
 def load_history(player_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     if not VALUATIONS_PATH.exists():
         if FEATURES_PATH.exists():
-            fdf = pd.read_parquet(FEATURES_PATH)
+            fdf = load_features_df()
             pdf = fdf[fdf["player_id"] == player_id].sort_values(by="valuation_date", ascending=True)
             if not pdf.empty:
                 val_df = pd.DataFrame({
@@ -224,7 +231,7 @@ def load_history(player_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
 def get_player_features(player_id: int) -> dict:
     if not PLAYERS_PATH.exists() or not VALUATIONS_PATH.exists():
         if FEATURES_PATH.exists():
-            fdf = pd.read_parquet(FEATURES_PATH)
+            fdf = load_features_df()
             pdf = fdf[fdf["player_id"] == player_id]
             if not pdf.empty:
                 row = pdf.sort_values(by="valuation_date", ascending=False).iloc[0].to_dict()
@@ -329,7 +336,7 @@ def get_player_features(player_id: int) -> dict:
         logger.warning(f"DuckDB player lookup failed: {err}")
         con.close()
         if FEATURES_PATH.exists():
-            fdf = pd.read_parquet(FEATURES_PATH)
+            fdf = load_features_df()
             pdf = fdf[fdf["player_id"] == player_id]
             if not pdf.empty:
                 row = pdf.sort_values(by="valuation_date", ascending=False).iloc[0].to_dict()
@@ -385,7 +392,7 @@ def get_player_features(player_id: int) -> dict:
 
     if FEATURES_PATH.exists():
         try:
-            fdf = pd.read_parquet(FEATURES_PATH)
+            fdf = load_features_df()
             pdf = fdf[fdf["player_id"] == player_id]
             if not pdf.empty:
                 latest_f = pdf.sort_values(by="valuation_date", ascending=False).iloc[0]

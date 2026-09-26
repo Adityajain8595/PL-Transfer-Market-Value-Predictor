@@ -1,5 +1,5 @@
 pandas
-pyarrow
+pyarrow<25
 scikit-learn==1.7.2
 lightgbm
 catboost

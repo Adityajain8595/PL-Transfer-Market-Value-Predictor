@@ -67,6 +67,7 @@ def load_dataset_stats() -> dict:
                 if c not in ["player_id", "valuation_date", "prev_valuation_date", "target_market_value_eur", "log_target_market_value"]
             ]
             avg_days = int(df["days_between_valuations"].mean()) if "days_between_valuations" in df.columns else 0
+            cutoff_str = dates.max().strftime("%B %Y")
             return {
                 "total_records": len(df),
                 "min_year": min_yr,
@@ -74,6 +75,7 @@ def load_dataset_stats() -> dict:
                 "feature_count": len(feature_cols),
                 "players_count": df["player_id"].nunique(),
                 "avg_days_between": avg_days,
+                "cutoff_date": cutoff_str,
             }
         except Exception as err:  # noqa: BLE001
             logger.warning(f"Could not compute dataset stats: {err}")
@@ -84,6 +86,7 @@ def load_dataset_stats() -> dict:
         "feature_count": 0,
         "players_count": 0,
         "avg_days_between": 0,
+        "cutoff_date": "June 2026",
     }
 
 

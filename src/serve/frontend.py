@@ -200,10 +200,12 @@ def cached_features(pid: int):
 # Catalog and model metrics
 catalog = cached_catalog()
 model_metrics = load_model_metrics()
+dataset_stats = load_dataset_stats()
 
 test_mae = float(model_metrics.get("test_mae", 3094428.0))
 test_r2 = float(model_metrics.get("test_r2", 0.9528))
 model_name = str(model_metrics.get("model_name", "LightGBM"))
+cutoff_date_str = str(dataset_stats.get("cutoff_date", "June 2026"))
 
 # Selection state
 if "selected_player_id" not in st.session_state:
@@ -211,7 +213,7 @@ if "selected_player_id" not in st.session_state:
 
 
 # Header Section
-header_col1, header_col2 = st.columns([1, 11])
+header_col1, header_col2, header_col3 = st.columns([1, 8.2, 3.8])
 
 with header_col1:
     if LOGO_PATH.exists():
@@ -233,6 +235,19 @@ with header_col2:
         </div>
     """, unsafe_allow_html=True)
 
+with header_col3:
+    st.markdown(f"""
+        <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-start; height: 100%; padding-top: 4px;">
+            <div style="background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.28); border-radius: 8px; padding: 6px 14px; text-align: right;">
+                <div style="color: #94A3B8; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">DATASET CUTOFF</div>
+                <div style="color: #00f2fe; font-size: 0.95rem; font-weight: 700;">{cutoff_date_str}</div>
+            </div>
+            <div style="color: #64748B; font-size: 0.72rem; margin-top: 4px; text-align: right; line-height: 1.35;">
+                Valuations & squads as of season close.<br>Transfers post-cutoff not reflected.
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
 st.markdown('<hr class="divider-line">', unsafe_allow_html=True)
 
 
@@ -249,7 +264,7 @@ if st.session_state.selected_player_id is None:
 
         with tab_pipe:
             st.markdown("""
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 8px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 24px; padding-bottom: 8px;">
                 <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px;">
                     <div style="color: #00f2fe; font-size: 0.78rem; font-weight: 700; text-transform: uppercase;">Stage 1: Ingestion & Curation</div>
                     <div style="color: #FFFFFF; font-weight: 600; font-size: 0.95rem; margin-top: 2px;">Final Processed Dataset</div>
@@ -381,7 +396,7 @@ if st.session_state.selected_player_id is None:
 
         with tab_stack:
             st.markdown("""
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 24px; padding-bottom: 8px;">
                 <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px;">
                     <div style="color: #00f2fe; font-weight: 700; font-size: 0.82rem;">DATA ENGINE</div>
                     <div style="color: #FFFFFF; font-weight: 600; font-size: 0.95rem;">DuckDB & Apache Parquet</div>

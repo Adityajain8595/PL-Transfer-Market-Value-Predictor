@@ -1,6 +1,6 @@
 pandas
 numpy
-scikit-learn
+scikit-learn==1.7.2
 lightgbm
 xgboost
 catboost
@@ -13,3 +13,7 @@ pyyaml
 python-dotenv
 duckdb
 pyarrow
+streamlit
+plotly
+httpx
+pillow

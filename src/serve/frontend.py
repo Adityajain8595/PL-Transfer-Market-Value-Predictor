@@ -1,5 +1,12 @@
 import base64
+import os
+import sys
 from pathlib import Path
+
+# Add project root to sys.path for cloud deployment
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 import httpx
 import plotly.graph_objects as go
@@ -15,15 +22,14 @@ from src.serve.dashboard_utils import (
     load_tournament_metrics,
 )
 
-API_URL = "http://127.0.0.1:8000/predict"
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/predict")
 
 # Assets
-ASSETS_DIR = Path("src/serve/assets")
+ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 LOGO_PATH = ASSETS_DIR / "pl_logo.png"
 FAVICON_PATH = ASSETS_DIR / "pl_favicon.png"
 BACKDROP_PATH = ASSETS_DIR / "backdrop.png"
 
-# Favicon
 fav_icon = Image.open(FAVICON_PATH) if FAVICON_PATH.exists() else None
 
 # Page Configuration
@@ -34,7 +40,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Load backdrop image as base64
 backdrop_css = ""
 if BACKDROP_PATH.exists():
     b64_img = base64.b64encode(BACKDROP_PATH.read_bytes()).decode()
@@ -48,7 +53,7 @@ if BACKDROP_PATH.exists():
     }}
     """
 
-# Clean Design System & CSS (No scattered boxes, clean lines)
+# UI Styling and Theme
 st.markdown(f"""
     <style>
     {backdrop_css}
@@ -192,7 +197,7 @@ def cached_features(pid: int):
     return get_player_features(player_id=pid)
 
 
-# Load Catalog & Dynamic Model Metrics
+# Catalog and model metrics
 catalog = cached_catalog()
 model_metrics = load_model_metrics()
 
@@ -200,12 +205,12 @@ test_mae = float(model_metrics.get("test_mae", 3094428.0))
 test_r2 = float(model_metrics.get("test_r2", 0.9528))
 model_name = str(model_metrics.get("model_name", "LightGBM"))
 
-# Session State for Selection
+# Selection state
 if "selected_player_id" not in st.session_state:
     st.session_state.selected_player_id = None
 
 
-# TOP HEADER (Dynamic Stats & Logo)
+# Header Section
 header_col1, header_col2 = st.columns([1, 11])
 
 with header_col1:
@@ -216,7 +221,6 @@ with header_col2:
     st.markdown('<div class="hero-title">Premier League Transfer Valuation</div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-subtitle">Live Valuation Service for Active Premier League Squads</div>', unsafe_allow_html=True)
 
-    # Dynamic badges reflecting active data & model state
     total_active_players = len(catalog)
     total_active_clubs = catalog["club_name"].nunique() if not catalog.empty else 20
     st.markdown(f"""
@@ -232,11 +236,9 @@ with header_col2:
 st.markdown('<hr class="divider-line">', unsafe_allow_html=True)
 
 
-# ==============================================================================
-# VIEW 1: LANDING PAGE TABLE VIEW (WHEN NO PLAYER IS SELECTED)
-# ==============================================================================
+# Directory View
 if st.session_state.selected_player_id is None:
-    # SYSTEM INTELLIGENCE & PIPELINE INSIGHTS (ABOVE THE DIRECTORY TABLE)
+    # Pipeline Overview and Architecture
     with st.expander("Pipeline Insights & Architecture", expanded=True):
         tab_pipe, tab_data, tab_model, tab_stack = st.tabs([
             "Pipeline Architecture",
@@ -324,7 +326,7 @@ if st.session_state.selected_player_id is None:
             tourn_metrics = load_tournament_metrics()
             champ_name = str(model_metrics.get("model_name", "LightGBM"))
 
-            # Dynamically sort candidate models by val_mae ascending (best to worst)
+            # Rank candidates by validation error
             sorted_models = sorted(
                 tourn_metrics.items(),
                 key=lambda x: x[1].get("val_mae", 99999999)
@@ -416,7 +418,7 @@ if st.session_state.selected_player_id is None:
     st.markdown('<hr class="divider-line">', unsafe_allow_html=True)
     st.subheader("Player Directory")
 
-    # Filter Controls
+    # Filter controls
     fc1, fc2, fc3 = st.columns([2, 1.5, 1])
 
     player_name_list = catalog["player_name"].tolist()
@@ -424,7 +426,6 @@ if st.session_state.selected_player_id is None:
     all_positions = ["All Positions"] + sorted([p for p in catalog["position"].dropna().unique().tolist() if p])
 
     with fc1:
-        # Autocomplete search
         search_selection = st.selectbox(
             "Search Player",
             options=["All Players"] + player_name_list,
@@ -438,10 +439,9 @@ if st.session_state.selected_player_id is None:
     with fc3:
         selected_pos = st.selectbox("Filter Position", options=all_positions, index=0)
 
-    # Apply filters
     filtered_catalog = catalog.copy()
     if search_selection != "All Players":
-        # If user picked a specific player from search autocomplete, open their profile immediately
+        # Autocomplete selection handler
         matched = catalog[catalog["player_name"] == search_selection]
         if not matched.empty:
             st.session_state.selected_player_id = int(matched.iloc[0]["player_id"])
@@ -454,7 +454,7 @@ if st.session_state.selected_player_id is None:
 
     st.caption(f"Showing {len(filtered_catalog):,} active Premier League players. Click any row to view profile.")
 
-    # Table with clickable row selection
+    # Directory table
     display_df = filtered_catalog[[
         "image_url", "player_name", "club_name", "position", "sub_position", "latest_age", "latest_recorded_val_eur"
     ]].rename(columns={
@@ -467,7 +467,6 @@ if st.session_state.selected_player_id is None:
         "latest_recorded_val_eur": "Market Value"
     })
 
-    # Interactive table with single-row click selection
     event = st.dataframe(
         display_df,
         on_select="rerun",
@@ -482,7 +481,6 @@ if st.session_state.selected_player_id is None:
         height=480
     )
 
-    # Detect click on table row
     selection = getattr(event, "selection", None)
     if selection is not None:
         selected_rows = selection.get("rows", []) if isinstance(selection, dict) else getattr(selection, "rows", [])
@@ -493,9 +491,7 @@ if st.session_state.selected_player_id is None:
             st.rerun()
 
 
-# ==============================================================================
-# VIEW 2: PLAYER PROFILE & VALUATION VIEW (WHEN A PLAYER IS CLICKED)
-# ==============================================================================
+# Player Profile View
 else:
     player_id = st.session_state.selected_player_id
     features = cached_features(player_id)
@@ -508,7 +504,6 @@ else:
             st.rerun()
         st.stop()
 
-    # Back Navigation Button
     back_col, _ = st.columns([2, 10])
     with back_col:
         st.markdown('<div class="back-btn">', unsafe_allow_html=True)
@@ -517,10 +512,9 @@ else:
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # 1. TOP HERO: PROFILE, CURRENT FORM & VALUATION (Clean layout, no boxes)
+    # Player Overview and Performance
     c_prof, c_form, c_val = st.columns([1.1, 1.4, 1.5])
 
-    # Player Profile
     with c_prof:
         st.subheader("Player Profile")
         img_url = features.get("image_url", "")
@@ -534,7 +528,7 @@ else:
         st.write(f"**Foot:** {str(features['dominant_foot']).capitalize()}")
         st.write(f"**Age:** {features['age_at_valuation']:.1f} yrs")
 
-    # Current Form (Crisp 2 words, current stats only)
+    # Active Match Statistics
     with c_form:
         st.subheader("Current Form")
         st.caption("Active season match statistics.")
@@ -564,7 +558,7 @@ else:
         cf7.metric("Yellow Cards", f"{yellows}")
         cf8.metric("Red Cards", f"{reds}")
 
-    # Current Valuation (Target vs AI Projection & Prior Anchor)
+    # Valuation Estimates
     with c_val:
         st.subheader("Current Valuation")
         st.caption("AI projected valuation vs Transfermarkt target value.")
@@ -573,7 +567,7 @@ else:
         prior_val = float(features.get("prior_market_value_eur", target_val))
         eval_days = int(features.get("days_between_valuations", 180))
 
-        # Real-time API prediction for current player using prior valuation as last known anchor
+        # Model valuation inference
         pred_eur = None
         try:
             req_payload = {
@@ -587,8 +581,8 @@ else:
                 "minutes_since_last_val": minutes,
                 "european_minutes_played": euro,
                 "goal_contributions_per_90": rate,
-                "minutes_prior_window": 1000,
-                "contrib_per_90_prior": 0.5,
+                "minutes_prior_window": int(features.get("minutes_prior_window", 1000)),
+                "contrib_per_90_prior": float(features.get("contrib_per_90_prior", 0.0)),
                 "yellow_cards_since_val": yellows
             }
             res = httpx.post(API_URL, json=req_payload, timeout=4.0)
@@ -615,7 +609,7 @@ else:
 
     st.markdown('<hr class="divider-line">', unsafe_allow_html=True)
 
-    # 2. HISTORICAL TRAJECTORY & HISTORY TABLE (Clear line divider, no box)
+    # Valuation History and Trajectory
     ch_col, tb_col = st.columns([1.5, 1.2])
 
     with ch_col:
@@ -677,7 +671,7 @@ else:
 
     st.markdown('<hr class="divider-line">', unsafe_allow_html=True)
 
-    # 3. WHAT-IF SIMULATOR (Direct headings, no box, clean line divider)
+    # Scenario Simulator
     st.subheader("Value Simulator")
     st.caption("Project future transfer valuation by adjusting prospective performance metrics.")
 
@@ -726,8 +720,8 @@ else:
             "minutes_since_last_val": sim_minutes,
             "european_minutes_played": sim_euro,
             "goal_contributions_per_90": min(sim_rate, 4.0),
-            "minutes_prior_window": 1000,
-            "contrib_per_90_prior": 0.5,
+            "minutes_prior_window": int(features.get("minutes_prior_window", 1000)),
+            "contrib_per_90_prior": float(features.get("contrib_per_90_prior", 0.0)),
             "yellow_cards_since_val": sim_yellows
         }
 

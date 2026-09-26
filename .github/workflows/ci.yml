@@ -30,7 +30,7 @@ jobs:
 
       - name: Static Analysis & Code Linting (Ruff)
         run: |
-          ruff check src/ tests/
+          ruff check src/ tests/ dags/
 
       - name: Execute Pytest Suite (Data Pipeline)
         run: |

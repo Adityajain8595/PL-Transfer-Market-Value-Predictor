@@ -22,3 +22,4 @@ streamlit
 duckdb
 plotly
 httpx
+pillow

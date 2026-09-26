@@ -93,7 +93,6 @@ def run_drift_pipeline() -> bool:
 
         ref_df, cur_df = attach_predictions(model, ref_df, cur_df, all_cols)
 
-        # Configure column mapping
         col_mapping = ColumnMapping(
             prediction="prediction",
             target="target_market_value_eur",
@@ -139,7 +138,7 @@ def run_drift_pipeline() -> bool:
 
         all_passed = suite_dict["summary"]["all_passed"]
 
-        # Log drift audit MLflow
+        # Log drift audit artifacts
         if MODEL_CONFIG_PATH.exists():
             with open(MODEL_CONFIG_PATH, "r") as f:
                 model_cfg = yaml.safe_load(f)

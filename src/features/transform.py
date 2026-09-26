@@ -187,10 +187,43 @@ def transform_features() -> None:
         """
 
         con.execute(f"COPY ({query}) TO '{parquet_path}' (FORMAT PARQUET)")
+
+        # Export latest player stats
+        latest_stats_path = str(out_dir / "player_latest_stats.parquet").replace("\\", "/")
+        latest_stats_query = f"""
+        COPY (
+            WITH latest_window AS (
+                SELECT 
+                    player_id,
+                    valuation_date,
+                    prev_valuation_date
+                FROM read_parquet('{parquet_path}')
+                QUALIFY ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY valuation_date DESC) = 1
+            )
+            SELECT 
+                lw.player_id,
+                COUNT(a.appearance_id) as window_appearances,
+                COALESCE(SUM(a.minutes_played), 0) as window_minutes,
+                COALESCE(SUM(a.goals), 0) as window_goals,
+                COALESCE(SUM(a.assists), 0) as window_assists,
+                COALESCE(SUM(a.yellow_cards), 0) as window_yellow_cards,
+                COALESCE(SUM(a.red_cards), 0) as window_red_cards,
+                COALESCE(SUM(CASE WHEN a.competition_id IN ('CL', 'EL', 'ECL') THEN a.minutes_played ELSE 0 END), 0) as window_european_minutes
+            FROM latest_window lw
+            LEFT JOIN read_csv_auto('{raw_dir}/appearances.csv') a
+              ON lw.player_id = TRY_CAST(a.player_id AS BIGINT)
+             AND a.date::DATE > lw.prev_valuation_date
+             AND a.date::DATE <= lw.valuation_date
+            GROUP BY lw.player_id
+        ) TO '{latest_stats_path}' (FORMAT PARQUET)
+        """
+        con.execute(latest_stats_query)
         con.close()
 
         elapsed = time.time() - start_time
-        logger.info(f"Match-based transformation complete in {elapsed:.2f}s -> {parquet_path}")
+        logger.info(
+            f"Match-based transformation complete in {elapsed:.2f}s -> {parquet_path} and {latest_stats_path}"
+        )
 
     except Exception as err:
         logger.error("Feature engineering failed.")

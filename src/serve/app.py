@@ -6,8 +6,8 @@ import joblib
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
-from sklearn.impute import SimpleImputer
 
 from src.serve.dashboard_utils import get_player_features
 from src.serve.schemas import (
@@ -28,18 +28,6 @@ MODEL_PATH = MODELS_DIR / "champion_model.joblib"
 METRICS_PATH = MODELS_DIR / "champion_metrics.json"
 model_pipeline = None
 
-# Ensure pickled models from scikit-learn 1.7.x execute seamlessly on newer sklearn releases
-_orig_simple_imputer_transform = SimpleImputer.transform
-
-
-def _compat_simple_imputer_transform(self, X):
-    if not hasattr(self, "_fill_dtype"):
-        self._fill_dtype = self.statistics_.dtype if hasattr(self, "statistics_") else None
-    return _orig_simple_imputer_transform(self, X)
-
-
-SimpleImputer.transform = _compat_simple_imputer_transform
-
 
 def load_champion_version() -> str:
     if METRICS_PATH.exists():
@@ -55,7 +43,7 @@ def load_champion_version() -> str:
 model_version_str = load_champion_version()
 
 
-# Application lifespan manager
+# Service lifecycle manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global model_pipeline
@@ -78,17 +66,25 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Prometheus instrumentator setup
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 Instrumentator().instrument(app).expose(app)
 
-# Convert payload to dataframe
+
 def payload_to_df(payload: PlayerFeatures) -> pd.DataFrame:
     data = payload.model_dump()
     data["log_last_known_value"] = float(np.round(np.log1p(data["last_known_value_eur"]), 4))
     del data["last_known_value_eur"]
     return pd.DataFrame([data])
 
-# Health check probe
+
+# Inference and simulation endpoints
 @app.get("/health", response_model=HealthCheckResponse, status_code=status.HTTP_200_OK, tags=["System"])
 async def health_check():
     return HealthCheckResponse(
@@ -97,7 +93,7 @@ async def health_check():
         service="pl-market-value-inference"
     )
 
-# Single prediction endpoint
+
 @app.post("/predict", response_model=PredictionResponse, status_code=status.HTTP_200_OK, tags=["Inference"])
 async def predict_player(features: PlayerFeatures):
     if model_pipeline is None:
@@ -116,7 +112,7 @@ async def predict_player(features: PlayerFeatures):
         logger.error(f"Prediction error: {err!s}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Inference error: {err!s}") from err
 
-# Hydrated player prediction endpoint
+
 @app.get("/predict/player/{player_id}", response_model=PlayerPredictionResponse, status_code=status.HTTP_200_OK, tags=["Inference"])
 async def predict_by_player_id(player_id: int):
     if model_pipeline is None:
@@ -160,7 +156,7 @@ async def predict_by_player_id(player_id: int):
         logger.error(f"Player lookup inference error: {err!s}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Inference error: {err!s}") from err
 
-# Scenario simulator endpoint
+
 @app.post("/predict/simulate", response_model=ScenarioSimulationResponse, status_code=status.HTTP_200_OK, tags=["Simulation"])
 async def simulate_scenario(sim: ScenarioSimulationRequest):
     if model_pipeline is None:
@@ -211,7 +207,7 @@ async def simulate_scenario(sim: ScenarioSimulationRequest):
         logger.error(f"Scenario simulation error: {err!s}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Simulation error: {err!s}") from err
 
-# Batch prediction endpoint
+
 @app.post("/predict/batch", response_model=BatchPredictionResponse, status_code=status.HTTP_200_OK, tags=["Inference"])
 async def predict_batch(batch: BatchPredictionRequest):
     if model_pipeline is None:
@@ -226,7 +222,8 @@ async def predict_batch(batch: BatchPredictionRequest):
         results = [
             PredictionResponse(
                 predicted_market_value_eur=round(float(eur), 2),
-                log_market_value=round(float(log_val), 4)
+                log_market_value=round(float(log_val), 4),
+                model_version=model_version_str,
             )
             for eur, log_val in zip(preds_eur, preds_log)
         ]

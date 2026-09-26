@@ -8,6 +8,9 @@ from src.utils.logger import logger
 # DagsHub DVC remote synchronization
 def sync_dvc(action: str = "pull") -> None:
     try:
+        if action == "push":
+            logger.info("Staging processed data with DVC...")
+            subprocess.run(["dvc", "add", "data/processed"], capture_output=True, text=True, check=False)
         logger.info(f"Running DVC {action}...")
         cmd = ["dvc", action]
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)

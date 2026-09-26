@@ -5,13 +5,14 @@ from src.utils.paths import REPORTS_DIR
 
 SUMMARY_PATH = REPORTS_DIR / "drift" / "drift_summary.json"
 
-# Validate drift summary creation
+
+# Evidently drift monitoring tests
 def test_drift_summary_exists():
     if not SUMMARY_PATH.exists():
         run_drift_pipeline()
     assert SUMMARY_PATH.exists(), f"Drift summary missing: {SUMMARY_PATH}"
 
-# Validate drift test execution
+
 def test_drift_tests_executed():
     if not SUMMARY_PATH.exists():
         run_drift_pipeline()

@@ -4,11 +4,12 @@ from fastapi.testclient import TestClient
 from src.serve.app import app
 
 
-# Fixture API test client
+# Test API client fixture
 @pytest.fixture(scope="module")
 def client():
     with TestClient(app) as c:
         yield c
+
 
 sample_payload = {
     "age_at_valuation": 23.5,
@@ -26,7 +27,8 @@ sample_payload = {
     "contrib_per_90_prior": 0.50
 }
 
-# Test health check endpoint
+
+# FastAPI endpoint validation tests
 def test_health_endpoint(client):
     resp = client.get("/health")
     assert resp.status_code == 200
@@ -34,7 +36,7 @@ def test_health_endpoint(client):
     assert data["status"] == "healthy"
     assert data["model_loaded"] is True
 
-# Test single player prediction
+
 def test_single_prediction_endpoint(client):
     resp = client.post("/predict", json=sample_payload)
     assert resp.status_code == 200
@@ -43,20 +45,20 @@ def test_single_prediction_endpoint(client):
     assert data["predicted_market_value_eur"] > 0
     assert "log_market_value" in data
 
-# Test Prometheus metrics exposure
+
 def test_metrics_endpoint(client):
     resp = client.get("/metrics")
     assert resp.status_code == 200
     assert "http_requests_total" in resp.text
 
-# Test batch player prediction
+
 def test_batch_prediction_endpoint(client):
     resp = client.post("/predict/batch", json={"players": [sample_payload, sample_payload]})
     assert resp.status_code == 200
     data = resp.json()
     assert len(data["predictions"]) == 2
 
-# Test hydrated player prediction
+
 def test_hydrated_player_endpoint(client):
     resp = client.get("/predict/player/91970")
     assert resp.status_code == 200
@@ -66,12 +68,12 @@ def test_hydrated_player_endpoint(client):
     assert "predicted_market_value_eur" in data
     assert data["predicted_market_value_eur"] > 0
 
-# Test hydrated player not found
+
 def test_hydrated_player_not_found(client):
     resp = client.get("/predict/player/99999999")
     assert resp.status_code == 404
 
-# Test scenario simulator endpoint
+
 def test_scenario_simulation_endpoint(client):
     payload = {
         "player_id": 91970,

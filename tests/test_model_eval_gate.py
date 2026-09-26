@@ -12,11 +12,12 @@ MODEL_PATH = MODELS_DIR / "champion_model.joblib"
 MAX_MAE = 3_500_000.0
 MIN_R2 = 0.90
 
-# Validate model artifact presence
+
+# Model regression quality gate tests
 def test_champion_artifact_exists():
     assert MODEL_PATH.exists(), f"Champion model missing: {MODEL_PATH}"
 
-# Validate model evaluation gates
+
 def test_model_performance_regression_gate():
     with open(DATA_CONFIG_PATH, "r") as f:
         cfg = yaml.safe_load(f)

@@ -14,7 +14,7 @@ from src.utils.paths import CONFIG_DIR, RAW_DIR
 load_dotenv()
 CONFIG_PATH = CONFIG_DIR / "data_config.yaml"
 
-# Download Kaggle datasets
+# Download raw Kaggle dataset
 def download_data(config_path: Path = CONFIG_PATH) -> None:
     try:
         if not config_path.exists():
@@ -28,12 +28,10 @@ def download_data(config_path: Path = CONFIG_PATH) -> None:
         req_files = set(cfg["raw_data"]["required_files"])
         dataset_name = "davidcariboo/player-scores"
 
-        # Kaggle API authentication
         logger.info("Authenticating with Kaggle API...")
         api = KaggleApi()
         api.authenticate()
 
-        # Fetch remote archive
         logger.info(f"Downloading dataset '{dataset_name}' to {raw_dir}...")
         api.dataset_download_files(dataset=dataset_name, path=str(raw_dir), unzip=False)
 
@@ -41,7 +39,6 @@ def download_data(config_path: Path = CONFIG_PATH) -> None:
         if not zip_files:
             raise FileNotFoundError(f"No zip found in {raw_dir}")
 
-        # Extract targeted files
         for zip_path in zip_files:
             logger.info(f"Extracting archive: {zip_path.name}...")
             with zipfile.ZipFile(zip_path, "r") as zip_ref:

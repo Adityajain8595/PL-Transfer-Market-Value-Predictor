@@ -1,3 +1,4 @@
+import json
 import sys
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -58,6 +59,7 @@ def run_train_pipeline():
 
         # Execute tournament runs
         logger.info(f"Running tournament across {len(models)} models...")
+        tournament_records = {}
         for name, instance in models.items():
             with mlflow.start_run(run_name=f"Tournament_{name}"):
                 pipe = Pipeline([("preprocessor", clone(preprocessor)), ("regressor", clone(instance))])
@@ -65,6 +67,12 @@ def run_train_pipeline():
 
                 val_preds = pipe.predict(x_val)
                 metrics = evaluate_preds(y_val, val_preds)
+
+                tournament_records[name] = {
+                    "val_mae": float(metrics["MAE"]),
+                    "val_rmse": float(metrics["RMSE"]),
+                    "val_r2": float(metrics["R2"]),
+                }
 
                 for k, v in metrics.items():
                     mlflow.log_metric(f"val_{k}", v)
@@ -74,6 +82,12 @@ def run_train_pipeline():
                     best_mae = metrics["MAE"]
                     champ_name = name
                     champ_instance = instance
+
+        # Persist tournament leaderboard for serving layer
+        MODELS_DIR.mkdir(parents=True, exist_ok=True)
+        with open(MODELS_DIR / "tournament_metrics.json", "w") as tf:
+            json.dump(tournament_records, tf, indent=2)
+        logger.info("Saved models/tournament_metrics.json.")
 
         logger.info(f"Tournament Champion: [{champ_name}] (Val MAE: EUR {best_mae:,.0f})")
 
@@ -105,7 +119,7 @@ def run_train_pipeline():
             except Exception as e:  # noqa: BLE001
                 logger.warning(f"Challenger benchmark warning: {e}")
 
-        # Log champion model run and conditionally promote
+        # Log and promote champion
         with mlflow.start_run(run_name=f"Champion_{champ_name}"):
             if hasattr(champ_instance, "get_params"):
                 mlflow.log_params(champ_instance.get_params())
@@ -131,10 +145,9 @@ def run_train_pipeline():
                     model_name=model_cfg["mlflow"]["registered_model_name"]
                 )
 
-                # Persist local champion binary and metrics
+                # Save local champion model
                 MODELS_DIR.mkdir(parents=True, exist_ok=True)
                 joblib.dump(champ_pipe, champion_path)
-                import json
                 metrics_data = {
                     "model_name": champ_name,
                     "test_mae": float(test_metrics["MAE"]),

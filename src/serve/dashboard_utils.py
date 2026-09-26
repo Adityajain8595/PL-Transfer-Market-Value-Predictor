@@ -3,6 +3,7 @@ import json
 import duckdb
 import pandas as pd
 
+from src.serve.clubs import CURRENT_2026_PL_CLUBS
 from src.utils.logger import logger
 from src.utils.paths import MODELS_DIR, PROCESSED_DIR, RAW_DIR
 
@@ -17,7 +18,7 @@ TOURNAMENT_PATH = MODELS_DIR / "tournament_metrics.json"
 FEATURES_PATH = PROCESSED_DIR / "features.parquet"
 
 
-# Load champion model metrics dynamically
+# Load champion model metrics
 def load_model_metrics() -> dict:
     if METRICS_PATH.exists():
         try:
@@ -33,7 +34,7 @@ def load_model_metrics() -> dict:
     }
 
 
-# Load tournament comparison metrics dynamically
+# Load tournament comparison metrics
 def load_tournament_metrics() -> dict:
     if TOURNAMENT_PATH.exists():
         try:
@@ -41,16 +42,10 @@ def load_tournament_metrics() -> dict:
                 return json.load(f)
         except Exception as err:  # noqa: BLE001
             logger.warning(f"Could not read tournament metrics file: {err}")
-    return {
-        "LightGBM": {"val_mae": 2618511.0, "val_rmse": 4593406.0, "val_r2": 0.9587},
-        "XGBoost": {"val_mae": 2642194.0, "val_rmse": 4714736.0, "val_r2": 0.9565},
-        "RandomForest": {"val_mae": 2700654.0, "val_rmse": 4908480.0, "val_r2": 0.9528},
-        "GradientBoosting": {"val_mae": 2786100.0, "val_rmse": 4938663.0, "val_r2": 0.9523},
-        "CatBoost": {"val_mae": 2836798.0, "val_rmse": 5124272.0, "val_r2": 0.9486},
-    }
+    return {}
 
 
-# Load dataset summary statistics dynamically directly from processed features
+# Load processed dataset metrics
 def load_dataset_stats() -> dict:
     if FEATURES_PATH.exists():
         try:
@@ -62,7 +57,7 @@ def load_dataset_stats() -> dict:
                 c for c in df.columns
                 if c not in ["player_id", "valuation_date", "prev_valuation_date", "target_market_value_eur", "log_target_market_value"]
             ]
-            avg_days = int(df["days_between_valuations"].mean()) if "days_between_valuations" in df.columns else 194
+            avg_days = int(df["days_between_valuations"].mean()) if "days_between_valuations" in df.columns else 0
             return {
                 "total_records": len(df),
                 "min_year": min_yr,
@@ -74,41 +69,20 @@ def load_dataset_stats() -> dict:
         except Exception as err:  # noqa: BLE001
             logger.warning(f"Could not compute dataset stats: {err}")
     return {
-        "total_records": 12476,
-        "min_year": 2013,
-        "max_year": 2026,
-        "feature_count": 13,
-        "players_count": 1850,
-        "avg_days_between": 194,
+        "total_records": 0,
+        "min_year": 0,
+        "max_year": 0,
+        "feature_count": 0,
+        "players_count": 0,
+        "avg_days_between": 0,
     }
 
 
 
-CURRENT_2026_PL_CLUBS = [
-    "AFC Bournemouth",
-    "Arsenal FC",
-    "Aston Villa",
-    "Brentford FC",
-    "Brighton & Hove Albion",
-    "Chelsea FC",
-    "Coventry City",          # Promoted for 2026/27
-    "Crystal Palace",
-    "Everton FC",
-    "Fulham FC",
-    "Hull City",              # Promoted for 2026/27
-    "Ipswich Town",           # Promoted for 2026/27
-    "Leeds United",
-    "Liverpool FC",
-    "Manchester City",
-    "Manchester United",
-    "Newcastle United",
-    "Nottingham Forest",
-    "Sunderland AFC",
-    "Tottenham Hotspur",
-]
 
 
-# Load verified active Premier League player catalog cross-checking latest valuations & matches
+
+# Load active player catalog
 def load_catalog() -> pd.DataFrame:
     if not PLAYERS_PATH.exists() or not VALUATIONS_PATH.exists():
         if FEATURES_PATH.exists():
@@ -195,7 +169,7 @@ def load_catalog() -> pd.DataFrame:
         return pd.DataFrame()
 
 
-# Load player historical valuation records with club progression
+# Load player valuation trajectory
 def load_history(player_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     if not VALUATIONS_PATH.exists():
         if FEATURES_PATH.exists():
@@ -246,7 +220,7 @@ def load_history(player_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     return val_df, table_df
 
 
-# Get latest verified player profile, true latest club, real match statistics, target value, and prior value
+# Extract individual player profile
 def get_player_features(player_id: int) -> dict:
     if not PLAYERS_PATH.exists() or not VALUATIONS_PATH.exists():
         if FEATURES_PATH.exists():
@@ -394,7 +368,7 @@ def get_player_features(player_id: int) -> dict:
 
     data = df.iloc[0].to_dict()
 
-    # Calculate G+A / 90 rate
+    # Compute contribution rate
     minutes = float(data.get("window_minutes", 0))
     goals = float(data.get("window_goals", 0))
     assists = float(data.get("window_assists", 0))
@@ -402,5 +376,22 @@ def get_player_features(player_id: int) -> dict:
         data["goal_contributions_per_90"] = min(round(((goals + assists) * 90.0) / minutes, 4), 4.0)
     else:
         data["goal_contributions_per_90"] = 0.0
+
+    data["minutes_since_last_val"] = int(data.get("window_minutes", 1000))
+    data["european_minutes_played"] = int(data.get("window_european_minutes", 0))
+    data["yellow_cards_since_val"] = int(data.get("window_yellow_cards", 0))
+    data["minutes_prior_window"] = 1000
+    data["contrib_per_90_prior"] = 0.0
+
+    if FEATURES_PATH.exists():
+        try:
+            fdf = pd.read_parquet(FEATURES_PATH)
+            pdf = fdf[fdf["player_id"] == player_id]
+            if not pdf.empty:
+                latest_f = pdf.sort_values(by="valuation_date", ascending=False).iloc[0]
+                data["minutes_prior_window"] = int(latest_f.get("minutes_prior_window", 1000))
+                data["contrib_per_90_prior"] = float(latest_f.get("contrib_per_90_prior", 0.0))
+        except Exception as err:  # noqa: BLE001
+            logger.debug(f"Prior window features lookup skipped: {err}")
 
     return data

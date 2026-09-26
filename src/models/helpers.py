@@ -26,7 +26,7 @@ def load_split_data():
     df = pd.read_parquet(parquet_path)
     df["valuation_date"] = pd.to_datetime(df["valuation_date"])
 
-    # Deduplicate and filter out inactive/retired records with zero or null match stats
+    # Filter inactive and duplicate records
     df = df.drop_duplicates(subset=["player_id", "valuation_date"])
     if "minutes_since_last_val" in df.columns:
         df = df[df["minutes_since_last_val"] > 0]

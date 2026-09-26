@@ -21,3 +21,4 @@ airflow/webserver_config.py
 airflow/logs/
 airflow/simple_auth_manager_passwords.json.generated
 *.egg-info/
+reports/**/*.html

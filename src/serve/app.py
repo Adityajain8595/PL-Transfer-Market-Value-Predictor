@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, status
 from prometheus_fastapi_instrumentator import Instrumentator
+from sklearn.impute import SimpleImputer
 
 from src.serve.dashboard_utils import get_player_features
 from src.serve.schemas import (
@@ -26,6 +27,18 @@ from src.utils.paths import MODELS_DIR
 MODEL_PATH = MODELS_DIR / "champion_model.joblib"
 METRICS_PATH = MODELS_DIR / "champion_metrics.json"
 model_pipeline = None
+
+# Ensure pickled models from scikit-learn 1.7.x execute seamlessly on newer sklearn releases
+_orig_simple_imputer_transform = SimpleImputer.transform
+
+
+def _compat_simple_imputer_transform(self, X):
+    if not hasattr(self, "_fill_dtype"):
+        self._fill_dtype = self.statistics_.dtype if hasattr(self, "statistics_") else None
+    return _orig_simple_imputer_transform(self, X)
+
+
+SimpleImputer.transform = _compat_simple_imputer_transform
 
 
 def load_champion_version() -> str:

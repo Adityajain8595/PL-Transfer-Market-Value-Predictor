@@ -16,6 +16,8 @@ APPEARANCES_PATH = RAW_DIR / "appearances.csv"
 METRICS_PATH = MODELS_DIR / "champion_metrics.json"
 TOURNAMENT_PATH = MODELS_DIR / "tournament_metrics.json"
 FEATURES_PATH = PROCESSED_DIR / "features.parquet"
+ACTIVE_CATALOG_PATH = PROCESSED_DIR / "active_players_catalog.parquet"
+ACTIVE_FEATURES_PATH = PROCESSED_DIR / "active_players_features.parquet"
 
 
 def load_features_df() -> pd.DataFrame:
@@ -142,6 +144,13 @@ def get_player_metadata(player_id: int) -> tuple[str, str]:
 
 # Load active player catalog
 def load_catalog() -> pd.DataFrame:
+    if ACTIVE_CATALOG_PATH.exists():
+        try:
+            return duckdb.read_parquet(str(ACTIVE_CATALOG_PATH).replace("\\", "/")).df()
+        except Exception as err:  # noqa: BLE001
+            logger.debug(f"Parquet catalog read fallback: {err}")
+            return pd.read_parquet(ACTIVE_CATALOG_PATH)
+
     if not PLAYERS_PATH.exists() or not VALUATIONS_PATH.exists():
         if FEATURES_PATH.exists():
             fdf = load_features_df()
@@ -265,6 +274,15 @@ def load_history(player_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 # Extract individual player profile
 def get_player_features(player_id: int) -> dict:
+    if ACTIVE_FEATURES_PATH.exists():
+        try:
+            adf = duckdb.read_parquet(str(ACTIVE_FEATURES_PATH).replace("\\", "/")).df()
+            matched = adf[adf["player_id"] == player_id]
+            if not matched.empty:
+                return matched.iloc[0].to_dict()
+        except Exception as err:  # noqa: BLE001
+            logger.debug(f"Active features lookup fallback: {err}")
+
     if not PLAYERS_PATH.exists() or not VALUATIONS_PATH.exists():
         if FEATURES_PATH.exists():
             fdf = load_features_df()

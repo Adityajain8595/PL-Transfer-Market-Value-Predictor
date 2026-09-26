@@ -56,8 +56,8 @@ def load_dataset_stats() -> dict:
         try:
             df = pd.read_parquet(FEATURES_PATH)
             dates = pd.to_datetime(df["valuation_date"])
-            min_yr = int(dates.min().year)
-            max_yr = int(dates.max().year)
+            min_yr = dates.min().year
+            max_yr = dates.max().year
             feature_cols = [
                 c for c in df.columns
                 if c not in ["player_id", "valuation_date", "prev_valuation_date", "target_market_value_eur", "log_target_market_value"]
@@ -68,7 +68,7 @@ def load_dataset_stats() -> dict:
                 "min_year": min_yr,
                 "max_year": max_yr,
                 "feature_count": len(feature_cols),
-                "players_count": int(df["player_id"].nunique()),
+                "players_count": df["player_id"].nunique(),
                 "avg_days_between": avg_days,
             }
         except Exception as err:  # noqa: BLE001

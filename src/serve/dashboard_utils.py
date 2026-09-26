@@ -110,6 +110,20 @@ CURRENT_2026_PL_CLUBS = [
 
 # Load verified active Premier League player catalog cross-checking latest valuations & matches
 def load_catalog() -> pd.DataFrame:
+    if not PLAYERS_PATH.exists() or not VALUATIONS_PATH.exists():
+        if FEATURES_PATH.exists():
+            fdf = pd.read_parquet(FEATURES_PATH)
+            cat = fdf.sort_values(by="valuation_date", ascending=False).groupby("player_id").first().reset_index()
+            cat["latest_recorded_val_eur"] = cat["target_market_value_eur"]
+            cat["latest_age"] = cat["age_at_valuation"]
+            cat["image_url"] = ""
+            cat["country_of_citizenship"] = "Unknown"
+            return cat[[
+                "player_id", "player_name", "image_url", "country_of_citizenship",
+                "club_name", "position", "sub_position", "dominant_foot", "latest_age", "latest_recorded_val_eur"
+            ]]
+        return pd.DataFrame()
+
     con = duckdb.connect(database=":memory:")
     p_path = str(PLAYERS_PATH).replace("\\", "/")
     v_path = str(VALUATIONS_PATH).replace("\\", "/")
@@ -160,13 +174,46 @@ def load_catalog() -> pd.DataFrame:
         ORDER BY latest_recorded_val_eur DESC;
     """
 
-    df = con.execute(query).df()
-    con.close()
-    return df
+    try:
+        df = con.execute(query).df()
+        con.close()
+        return df
+    except Exception as err:  # noqa: BLE001
+        logger.warning(f"DuckDB catalog query failed, falling back to features.parquet: {err}")
+        con.close()
+        if FEATURES_PATH.exists():
+            fdf = pd.read_parquet(FEATURES_PATH)
+            cat = fdf.sort_values(by="valuation_date", ascending=False).groupby("player_id").first().reset_index()
+            cat["latest_recorded_val_eur"] = cat["target_market_value_eur"]
+            cat["latest_age"] = cat["age_at_valuation"]
+            cat["image_url"] = ""
+            cat["country_of_citizenship"] = "Unknown"
+            return cat[[
+                "player_id", "player_name", "image_url", "country_of_citizenship",
+                "club_name", "position", "sub_position", "dominant_foot", "latest_age", "latest_recorded_val_eur"
+            ]]
+        return pd.DataFrame()
 
 
 # Load player historical valuation records with club progression
 def load_history(player_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
+    if not VALUATIONS_PATH.exists():
+        if FEATURES_PATH.exists():
+            fdf = pd.read_parquet(FEATURES_PATH)
+            pdf = fdf[fdf["player_id"] == player_id].sort_values(by="valuation_date", ascending=True)
+            if not pdf.empty:
+                val_df = pd.DataFrame({
+                    "valuation_date": pd.to_datetime(pdf["valuation_date"]),
+                    "market_value_eur": pdf["target_market_value_eur"],
+                    "club_name": pdf["club_name"]
+                })
+                val_df["val_change_eur"] = val_df["market_value_eur"].diff().fillna(0)
+                prev_val = val_df["market_value_eur"].shift(1)
+                val_df["val_change_pct"] = ((val_df["val_change_eur"] / prev_val) * 100.0).fillna(0)
+                table_df = val_df.sort_values(by="valuation_date", ascending=False).copy()
+                return val_df, table_df
+        return pd.DataFrame(), pd.DataFrame()
+
     con = duckdb.connect(database=":memory:")
     v_path = str(VALUATIONS_PATH).replace("\\", "/")
 
@@ -179,8 +226,13 @@ def load_history(player_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
         WHERE player_id = {player_id} AND market_value_in_eur IS NOT NULL
         ORDER BY valuation_date ASC;
     """
-    val_df = con.execute(val_query).df()
-    con.close()
+    try:
+        val_df = con.execute(val_query).df()
+        con.close()
+    except Exception as err:  # noqa: BLE001
+        logger.warning(f"DuckDB valuation history failed: {err}")
+        con.close()
+        val_df = pd.DataFrame()
 
     if not val_df.empty:
         val_df["val_change_eur"] = val_df["market_value_eur"].diff().fillna(0)
@@ -196,6 +248,42 @@ def load_history(player_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 # Get latest verified player profile, true latest club, real match statistics, target value, and prior value
 def get_player_features(player_id: int) -> dict:
+    if not PLAYERS_PATH.exists() or not VALUATIONS_PATH.exists():
+        if FEATURES_PATH.exists():
+            fdf = pd.read_parquet(FEATURES_PATH)
+            pdf = fdf[fdf["player_id"] == player_id]
+            if not pdf.empty:
+                row = pdf.sort_values(by="valuation_date", ascending=False).iloc[0].to_dict()
+                return {
+                    "player_id": player_id,
+                    "player_name": str(row.get("player_name", "Unknown")),
+                    "image_url": "",
+                    "country_of_citizenship": "Unknown",
+                    "club_name": str(row.get("club_name", "Unknown")),
+                    "position": str(row.get("position", "Midfield")),
+                    "sub_position": str(row.get("sub_position", "Central Midfield")),
+                    "dominant_foot": str(row.get("dominant_foot", "right")),
+                    "age_at_valuation": float(row.get("age_at_valuation", 25.0)),
+                    "target_market_value_eur": float(row.get("target_market_value_eur", 0.0)),
+                    "current_market_value_eur": float(row.get("target_market_value_eur", 0.0)),
+                    "prior_market_value_eur": float(row.get("prev_market_value_eur", row.get("target_market_value_eur", 0.0))),
+                    "days_between_valuations": int(row.get("days_between_valuations", 180)),
+                    "window_appearances": int(row.get("minutes_since_last_val", 900) // 90),
+                    "window_minutes": int(row.get("minutes_since_last_val", 900)),
+                    "window_goals": 0,
+                    "window_assists": 0,
+                    "window_yellow_cards": int(row.get("yellow_cards_since_val", 0)),
+                    "window_red_cards": 0,
+                    "window_european_minutes": int(row.get("european_minutes_played", 0)),
+                    "goal_contributions_per_90": float(row.get("goal_contributions_per_90", 0.0)),
+                    "minutes_since_last_val": int(row.get("minutes_since_last_val", 1000)),
+                    "european_minutes_played": int(row.get("european_minutes_played", 0)),
+                    "minutes_prior_window": int(row.get("minutes_prior_window", 1000)),
+                    "contrib_per_90_prior": float(row.get("contrib_per_90_prior", 0.0)),
+                    "yellow_cards_since_val": int(row.get("yellow_cards_since_val", 0)),
+                }
+        return {}
+
     con = duckdb.connect(database=":memory:")
     p_path = str(PLAYERS_PATH).replace("\\", "/")
     v_path = str(VALUATIONS_PATH).replace("\\", "/")
@@ -260,8 +348,46 @@ def get_player_features(player_id: int) -> dict:
         WHERE p.player_id = {player_id}
         LIMIT 1;
     """
-    df = con.execute(query).df()
-    con.close()
+    try:
+        df = con.execute(query).df()
+        con.close()
+    except Exception as err:  # noqa: BLE001
+        logger.warning(f"DuckDB player lookup failed: {err}")
+        con.close()
+        if FEATURES_PATH.exists():
+            fdf = pd.read_parquet(FEATURES_PATH)
+            pdf = fdf[fdf["player_id"] == player_id]
+            if not pdf.empty:
+                row = pdf.sort_values(by="valuation_date", ascending=False).iloc[0].to_dict()
+                return {
+                    "player_id": player_id,
+                    "player_name": str(row.get("player_name", "Unknown")),
+                    "image_url": "",
+                    "country_of_citizenship": "Unknown",
+                    "club_name": str(row.get("club_name", "Unknown")),
+                    "position": str(row.get("position", "Midfield")),
+                    "sub_position": str(row.get("sub_position", "Central Midfield")),
+                    "dominant_foot": str(row.get("dominant_foot", "right")),
+                    "age_at_valuation": float(row.get("age_at_valuation", 25.0)),
+                    "target_market_value_eur": float(row.get("target_market_value_eur", 0.0)),
+                    "current_market_value_eur": float(row.get("target_market_value_eur", 0.0)),
+                    "prior_market_value_eur": float(row.get("prev_market_value_eur", row.get("target_market_value_eur", 0.0))),
+                    "days_between_valuations": int(row.get("days_between_valuations", 180)),
+                    "window_appearances": int(row.get("minutes_since_last_val", 900) // 90),
+                    "window_minutes": int(row.get("minutes_since_last_val", 900)),
+                    "window_goals": 0,
+                    "window_assists": 0,
+                    "window_yellow_cards": int(row.get("yellow_cards_since_val", 0)),
+                    "window_red_cards": 0,
+                    "window_european_minutes": int(row.get("european_minutes_played", 0)),
+                    "goal_contributions_per_90": float(row.get("goal_contributions_per_90", 0.0)),
+                    "minutes_since_last_val": int(row.get("minutes_since_last_val", 1000)),
+                    "european_minutes_played": int(row.get("european_minutes_played", 0)),
+                    "minutes_prior_window": int(row.get("minutes_prior_window", 1000)),
+                    "contrib_per_90_prior": float(row.get("contrib_per_90_prior", 0.0)),
+                    "yellow_cards_since_val": int(row.get("yellow_cards_since_val", 0)),
+                }
+        return {}
 
     if df.empty:
         return {}

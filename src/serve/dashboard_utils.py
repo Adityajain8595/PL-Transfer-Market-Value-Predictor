@@ -207,7 +207,7 @@ def load_catalog() -> pd.DataFrame:
         LEFT JOIN read_parquet('{s_path}') s ON p.player_id = s.player_id
         WHERE COALESCE(lv.val_club, la.app_club, p.current_club_name) IN ('{clubs_sql}')
           AND COALESCE(lv.val_eur, TRY_CAST(p.market_value_in_eur AS BIGINT)) > 0
-          AND NOT (COALESCE(s.window_appearances, 0) = 0 AND COALESCE(s.window_minutes, 0) = 0 AND (ROUND(DATEDIFF('day', p.date_of_birth::DATE, CURRENT_DATE) / 365.25, 1) >= 35 OR COALESCE(lv.val_eur, 0) < 1000000))
+          AND p.last_season >= 2025
         ORDER BY latest_recorded_val_eur DESC;
     """
 

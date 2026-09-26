@@ -1,3 +1,4 @@
+import json
 import sys
 from contextlib import asynccontextmanager
 
@@ -25,24 +26,31 @@ from src.utils.paths import MODELS_DIR
 MODEL_PATH = MODELS_DIR / "champion_model.joblib"
 METRICS_PATH = MODELS_DIR / "champion_metrics.json"
 model_pipeline = None
-model_version_str = "LightGBM-v6"
+
+
+def load_champion_version() -> str:
+    if METRICS_PATH.exists():
+        try:
+            with open(METRICS_PATH, "r", encoding="utf-8") as f:
+                c_metrics = json.load(f)
+                return str(c_metrics.get("model_version", f"{c_metrics.get('model_name', 'LightGBM')}-v6"))
+        except (OSError, json.JSONDecodeError) as err:
+            logger.warning(f"Could not parse champion metrics file: {err}")
+    return "LightGBM-v6"
+
+
+model_version_str = load_champion_version()
+
 
 # Application lifespan manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global model_pipeline, model_version_str
+    global model_pipeline
     try:
         if not MODEL_PATH.exists():
             raise FileNotFoundError(f"Model missing: {MODEL_PATH}")
         logger.info(f"Loading champion model from {MODEL_PATH}...")
         model_pipeline = joblib.load(MODEL_PATH)
-        if METRICS_PATH.exists():
-            try:
-                with open(METRICS_PATH, "r") as f:
-                    c_metrics = json.load(f)
-                    model_version_str = c_metrics.get("model_version", f"{c_metrics.get('model_name', 'LightGBM')}-v6")
-            except Exception:
-                pass
         logger.info(f"Model pipeline successfully loaded ({model_version_str}).")
     except Exception as err:
         logger.error("Failed loading model.")

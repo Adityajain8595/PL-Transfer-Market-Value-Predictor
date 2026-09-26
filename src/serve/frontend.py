@@ -249,9 +249,9 @@ if st.session_state.selected_player_id is None:
             st.markdown("""
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 8px;">
                 <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px;">
-                    <div style="color: #00f2fe; font-size: 0.78rem; font-weight: 700; text-transform: uppercase;">Stage 1: Ingestion</div>
-                    <div style="color: #FFFFFF; font-weight: 600; font-size: 0.95rem; margin-top: 2px;">Multi-Source Raw Data</div>
-                    <div style="color: #94A3B8; font-size: 0.8rem; margin-top: 4px;">60,000+ players, 1.5M+ match appearances, and 450k+ historical valuations from Transfermarkt.</div>
+                    <div style="color: #00f2fe; font-size: 0.78rem; font-weight: 700; text-transform: uppercase;">Stage 1: Ingestion & Curation</div>
+                    <div style="color: #FFFFFF; font-weight: 600; font-size: 0.95rem; margin-top: 2px;">Final Processed Dataset</div>
+                    <div style="color: #94A3B8; font-size: 0.8rem; margin-top: 4px;">12,476 curated evaluation windows across 1,904 historical players, with active match appearances and strict deduplication.</div>
                 </div>
                 <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px;">
                     <div style="color: #00f2fe; font-size: 0.78rem; font-weight: 700; text-transform: uppercase;">Stage 2: Feature Store</div>
@@ -597,37 +597,21 @@ else:
         except Exception:  # noqa: BLE001
             pred_eur = None
 
-        cv1, cv2 = st.columns(2)
-        cv1.metric("Target Value", f"EUR {target_val:,.0f}")
+        cv1, cv2, cv3 = st.columns(3)
+        cv1.metric("Prior Value (Anchor)", f"EUR {prior_val:,.0f}")
+        cv2.metric("Target Value", f"EUR {target_val:,.0f}")
         if pred_eur is not None:
             growth_eur = pred_eur - prior_val
             growth_pct = (growth_eur / prior_val) * 100.0 if prior_val > 0 else 0.0
-            variance_eur = pred_eur - target_val
-            variance_pct = (variance_eur / target_val) * 100.0 if target_val > 0 else 0.0
 
-            cv2.metric(
+            cv3.metric(
                 "AI Projected Value",
                 f"EUR {pred_eur:,.0f}",
                 delta=f"{growth_eur:+,.0f} ({growth_pct:+.1f}%) vs Prior",
                 delta_color="normal"
             )
-            variance_str = f"EUR {variance_eur:+,.0f} ({variance_pct:+.1f}% vs Target)"
-            growth_str = f"EUR {growth_eur:+,.0f} ({growth_pct:+.1f}% vs Prior)"
         else:
-            cv2.metric("AI Projected Value", "Connecting...")
-            variance_str = "Calculating..."
-            growth_str = "Calculating..."
-
-        st.markdown(f"""
-        <div style='padding-top: 10px; color: #94A3B8; font-size: 0.88rem; line-height: 1.6;'>
-            • <b>Target Value:</b> EUR {target_val:,.0f} (Official Transfermarkt Ground Truth)<br>
-            • <b>Prior Value (Anchor):</b> EUR {prior_val:,.0f} (Last Known Benchmark)<br>
-            • <b>Projected Growth:</b> {growth_str}<br>
-            • <b>Estimation Variance:</b> {variance_str}<br>
-            • <b>Model Error Margin:</b> ±EUR {test_mae:,.0f} (Test MAE)<br>
-            • <b>Model Fit:</b> {test_r2 * 100:.1f}% R²
-        </div>
-        """, unsafe_allow_html=True)
+            cv3.metric("AI Projected Value", "Connecting...")
 
     st.markdown('<hr class="divider-line">', unsafe_allow_html=True)
 

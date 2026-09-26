@@ -9,14 +9,16 @@ on:
 jobs:
   code-quality-and-tests:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "."
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
           cache: "pip"
 
       - name: Install dependencies
@@ -24,6 +26,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ruff pytest httpx
           pip install -r requirements.txt
+          pip install -e .
 
       - name: Static Analysis & Code Linting (Ruff)
         run: |
@@ -31,8 +34,8 @@ jobs:
 
       - name: Execute Pytest Suite (Data Pipeline, API Inference, Drift)
         run: |
-          pytest tests/test_data_pipeline.py tests/test_model_inference.py tests/test_drift.py -v
+          python -m pytest tests/test_data_pipeline.py tests/test_model_inference.py tests/test_drift.py -v
 
       - name: Verify Model Evaluation Performance Gate
         run: |
-          pytest tests/test_model_eval_gate.py -v
+          python -m pytest tests/test_model_eval_gate.py -v

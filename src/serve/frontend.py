@@ -452,6 +452,8 @@ if st.session_state.selected_player_id is None:
     if selected_pos != "All Positions":
         filtered_catalog = filtered_catalog[filtered_catalog["position"] == selected_pos]
 
+    filtered_catalog = filtered_catalog.sort_values(by="player_name", ascending=True).reset_index(drop=True)
+
     st.caption(f"Showing {len(filtered_catalog):,} active Premier League players. Click any row to view profile.")
 
     # Directory table

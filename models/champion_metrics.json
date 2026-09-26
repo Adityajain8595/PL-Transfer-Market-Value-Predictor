@@ -1,5 +1,6 @@
 {
   "model_name": "LightGBM",
+  "model_version": "LightGBM-v6",
   "test_mae": 3094427.569440969,
   "test_rmse": 5019761.607381979,
   "test_r2": 0.9527731542092271

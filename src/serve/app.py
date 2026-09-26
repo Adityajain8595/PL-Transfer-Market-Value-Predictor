@@ -23,18 +23,27 @@ from src.utils.logger import logger
 from src.utils.paths import MODELS_DIR
 
 MODEL_PATH = MODELS_DIR / "champion_model.joblib"
+METRICS_PATH = MODELS_DIR / "champion_metrics.json"
 model_pipeline = None
+model_version_str = "LightGBM-v6"
 
 # Application lifespan manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global model_pipeline
+    global model_pipeline, model_version_str
     try:
         if not MODEL_PATH.exists():
             raise FileNotFoundError(f"Model missing: {MODEL_PATH}")
         logger.info(f"Loading champion model from {MODEL_PATH}...")
         model_pipeline = joblib.load(MODEL_PATH)
-        logger.info("Model pipeline successfully loaded.")
+        if METRICS_PATH.exists():
+            try:
+                with open(METRICS_PATH, "r") as f:
+                    c_metrics = json.load(f)
+                    model_version_str = c_metrics.get("model_version", f"{c_metrics.get('model_name', 'LightGBM')}-v6")
+            except Exception:
+                pass
+        logger.info(f"Model pipeline successfully loaded ({model_version_str}).")
     except Exception as err:
         logger.error("Failed loading model.")
         raise CustomException(err, sys) from err
@@ -79,7 +88,8 @@ async def predict_player(features: PlayerFeatures):
 
         return PredictionResponse(
             predicted_market_value_eur=round(pred_eur, 2),
-            log_market_value=round(pred_log, 4)
+            log_market_value=round(pred_log, 4),
+            model_version=model_version_str
         )
     except Exception as err:
         logger.error(f"Prediction error: {err!s}")
@@ -120,7 +130,8 @@ async def predict_by_player_id(player_id: int):
             club_name=str(player_data.get("club_name", "Unknown")),
             last_known_value_eur=float(player_data["target_market_value_eur"]),
             predicted_market_value_eur=round(pred_eur, 2),
-            log_market_value=round(pred_log, 4)
+            log_market_value=round(pred_log, 4),
+            model_version=model_version_str
         )
     except HTTPException:
         raise

@@ -22,7 +22,7 @@ class PredictionResponse(BaseModel):
     predicted_market_value_eur: float = Field(..., description="Estimated market valuation")
     log_market_value: float = Field(..., description="Log raw output")
     valuation_currency: str = Field(default="EUR")
-    model_version: str = Field(default="champion-v1")
+    model_version: str = Field(default="LightGBM-v6")
 
 # Single player hydrated response
 class PlayerPredictionResponse(BaseModel):
@@ -33,7 +33,7 @@ class PlayerPredictionResponse(BaseModel):
     predicted_market_value_eur: float
     log_market_value: float
     valuation_currency: str = Field(default="EUR")
-    model_version: str = Field(default="champion-v1")
+    model_version: str = Field(default="LightGBM-v6")
 
 # Scenario simulator request
 class ScenarioSimulationRequest(BaseModel):

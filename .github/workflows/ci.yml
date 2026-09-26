@@ -38,7 +38,7 @@ jobs:
 
       - name: Execute Pytest Suite (API Inference)
         run: |
-          python -m pytest tests/test_model_inference.py -v
+          python -m pytest tests/test_model_inference.py -v --tb=short 2>&1 | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Execute Pytest Suite (Drift Monitoring)
         run: |

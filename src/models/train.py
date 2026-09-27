@@ -116,7 +116,7 @@ def run_train_pipeline():
                 if test_metrics["MAE"] > curr_metrics["MAE"] * 1.05:
                     logger.warning("New candidate degraded by >5% over current champion. Promotion skipped.")
                     should_promote = False
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.warning(f"Challenger benchmark warning: {e}")
 
         # Log and promote champion

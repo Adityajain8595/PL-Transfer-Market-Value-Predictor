@@ -23,7 +23,7 @@ ACTIVE_FEATURES_PATH = PROCESSED_DIR / "active_players_features.parquet"
 def load_features_df() -> pd.DataFrame:
     try:
         return duckdb.read_parquet(str(FEATURES_PATH).replace("\\", "/")).df()
-    except Exception:  # noqa: BLE001
+    except Exception:
         return pd.read_parquet(FEATURES_PATH)
 
 
@@ -33,7 +33,7 @@ def load_model_metrics() -> dict:
         try:
             with open(METRICS_PATH, "r") as f:
                 return json.load(f)
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             logger.warning(f"Could not read champion metrics file: {err}")
     return {
         "model_name": "LightGBM",
@@ -49,7 +49,7 @@ def load_tournament_metrics() -> dict:
         try:
             with open(TOURNAMENT_PATH, "r") as f:
                 return json.load(f)
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             logger.warning(f"Could not read tournament metrics file: {err}")
     return {}
 
@@ -77,7 +77,7 @@ def load_dataset_stats() -> dict:
                 "avg_days_between": avg_days,
                 "cutoff_date": cutoff_str,
             }
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             logger.warning(f"Could not compute dataset stats: {err}")
     return {
         "total_records": 0,
@@ -109,7 +109,7 @@ def build_catalog_from_parquet(fdf: pd.DataFrame) -> pd.DataFrame:
         try:
             meta_df = duckdb.read_parquet(str(meta_path).replace("\\", "/")).df()
             cat = cat.merge(meta_df, on="player_id", how="left")
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             logger.debug(f"Metadata parquet merge skipped: {err}")
 
     if "image_url" not in cat.columns:
@@ -140,7 +140,7 @@ def get_player_metadata(player_id: int) -> tuple[str, str]:
                     str(matched.iloc[0].get("image_url", "")),
                     str(matched.iloc[0].get("country_of_citizenship", "Unknown"))
                 )
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             logger.debug(f"Player metadata lookup skipped: {err}")
     return "", "Unknown"
 
@@ -150,7 +150,7 @@ def load_catalog() -> pd.DataFrame:
     if ACTIVE_CATALOG_PATH.exists():
         try:
             return duckdb.read_parquet(str(ACTIVE_CATALOG_PATH).replace("\\", "/")).df()
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             logger.debug(f"Parquet catalog read fallback: {err}")
             return pd.read_parquet(ACTIVE_CATALOG_PATH)
 
@@ -215,7 +215,7 @@ def load_catalog() -> pd.DataFrame:
         df = con.execute(query).df()
         con.close()
         return df
-    except Exception as err:  # noqa: BLE001
+    except Exception as err:
         logger.warning(f"DuckDB catalog query failed, falling back to features.parquet: {err}")
         con.close()
         if FEATURES_PATH.exists():
@@ -258,7 +258,7 @@ def load_history(player_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     try:
         val_df = con.execute(val_query).df()
         con.close()
-    except Exception as err:  # noqa: BLE001
+    except Exception as err:
         logger.warning(f"DuckDB valuation history failed: {err}")
         con.close()
         val_df = pd.DataFrame()
@@ -283,7 +283,7 @@ def get_player_features(player_id: int) -> dict:
             matched = adf[adf["player_id"] == player_id]
             if not matched.empty:
                 return matched.iloc[0].to_dict()
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             logger.debug(f"Active features lookup fallback: {err}")
 
     if not PLAYERS_PATH.exists() or not VALUATIONS_PATH.exists():
@@ -390,7 +390,7 @@ def get_player_features(player_id: int) -> dict:
     try:
         df = con.execute(query).df()
         con.close()
-    except Exception as err:  # noqa: BLE001
+    except Exception as err:
         logger.warning(f"DuckDB player lookup failed: {err}")
         con.close()
         if FEATURES_PATH.exists():
@@ -457,7 +457,7 @@ def get_player_features(player_id: int) -> dict:
                 latest_f = pdf.sort_values(by="valuation_date", ascending=False).iloc[0]
                 data["minutes_prior_window"] = int(latest_f.get("minutes_prior_window", 1000))
                 data["contrib_per_90_prior"] = float(latest_f.get("contrib_per_90_prior", 0.0))
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             logger.debug(f"Prior window features lookup skipped: {err}")
 
     return data

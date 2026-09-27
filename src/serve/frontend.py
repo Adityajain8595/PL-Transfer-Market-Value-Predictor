@@ -8,12 +8,12 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-import httpx  # noqa: E402
-import plotly.graph_objects as go  # noqa: E402
-import streamlit as st  # noqa: E402
-from PIL import Image  # noqa: E402
+import httpx
+import plotly.graph_objects as go
+import streamlit as st
+from PIL import Image
 
-from src.serve.dashboard_utils import (  # noqa: E402
+from src.serve.dashboard_utils import (
     get_player_features,
     load_catalog,
     load_dataset_stats,
@@ -605,7 +605,7 @@ else:
             res = httpx.post(API_URL, json=req_payload, timeout=4.0)
             if res.status_code == 200:
                 pred_eur = res.json()["predicted_market_value_eur"]
-        except Exception:  # noqa: BLE001
+        except Exception:
             pred_eur = None
 
         cv1, cv2, cv3 = st.columns(3)

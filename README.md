@@ -1,12 +1,15 @@
 # Premier League Player Market Value Predictor (MLOps)
 
 [![Continuous Integration](https://github.com/Adityajain8595/PL-Transfer-Market-Value-Predictor/actions/workflows/ci.yml/badge.svg)](https://github.com/Adityajain8595/PL-Transfer-Market-Value-Predictor/actions/workflows/ci.yml)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://pl-player-market-value-predictor.streamlit.app/)
 [![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.42+-FF4B4B.svg?logo=streamlit)](https://streamlit.io)
 [![DagsHub / MLflow](https://img.shields.io/badge/MLflow-Tracking-0194E2.svg?logo=mlflow)](https://dagshub.com)
 [![DVC](https://img.shields.io/badge/DVC-Data%20Versioning-945DD6.svg?logo=dvc)](https://dvc.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker)](https://www.docker.com/)
+
+> 🚀 **Live Interactive Demo**: [https://pl-player-market-value-predictor.streamlit.app/](https://pl-player-market-value-predictor.streamlit.app/)
 
 An end-to-end, production-grade MLOps system that models, tracks, evaluates, and serves market valuation predictions for Premier League football players using historical match appearances, performance trajectories, European competition experience, and demographic features.
 
@@ -81,6 +84,7 @@ An end-to-end, production-grade MLOps system that models, tracks, evaluates, and
    - Integrated `CORSMiddleware` and Prometheus metrics exporter (`/metrics`).
 
 6. **Executive Dashboard (Streamlit)**:
+   - **Live Cloud Deployment**: [pl-player-market-value-predictor.streamlit.app](https://pl-player-market-value-predictor.streamlit.app/)
    - Clean, modern design featuring Premier League branding.
    - Active player directory table, historical career valuation trajectories, and real-time "What-If" scenario simulator.
 

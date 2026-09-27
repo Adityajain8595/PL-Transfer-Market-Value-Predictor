@@ -60,10 +60,10 @@ def test_batch_prediction_endpoint(client):
 
 
 def test_hydrated_player_endpoint(client):
-    resp = client.get("/predict/player/91970")
+    resp = client.get("/predict/player/433177")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["player_id"] == 91970
+    assert data["player_id"] == 433177
     assert "player_name" in data
     assert "predicted_market_value_eur" in data
     assert data["predicted_market_value_eur"] > 0
@@ -76,7 +76,7 @@ def test_hydrated_player_not_found(client):
 
 def test_scenario_simulation_endpoint(client):
     payload = {
-        "player_id": 91970,
+        "player_id": 433177,
         "simulated_minutes": 2200,
         "simulated_goals": 8,
         "simulated_assists": 6,
@@ -88,7 +88,7 @@ def test_scenario_simulation_endpoint(client):
     resp = client.post("/predict/simulate", json=payload)
     assert resp.status_code == 200
     data = resp.json()
-    assert data["player_id"] == 91970
+    assert data["player_id"] == 433177
     assert "current_market_value_eur" in data
     assert "predicted_market_value_eur" in data
     assert "value_change_eur" in data

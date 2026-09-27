@@ -130,10 +130,10 @@ async def predict_by_player_id(player_id: int):
             club_name=str(player_data["club_name"]),
             last_known_value_eur=float(player_data["target_market_value_eur"]),
             days_between_valuations=int(player_data.get("days_between_valuations", 180)),
-            minutes_since_last_val=int(player_data.get("minutes_since_last_val", 1000)),
+            minutes_since_last_val=int(player_data.get("minutes_since_last_val", 0)),
             european_minutes_played=int(player_data.get("european_minutes_played", 0)),
             goal_contributions_per_90=float(player_data.get("goal_contributions_per_90", 0.0)),
-            minutes_prior_window=int(player_data.get("minutes_prior_window", 1000)),
+            minutes_prior_window=int(player_data.get("minutes_prior_window", 0)),
             contrib_per_90_prior=float(player_data.get("contrib_per_90_prior", 0.0)),
             yellow_cards_since_val=int(player_data.get("yellow_cards_since_val", 0))
         )

@@ -97,7 +97,7 @@ def load_dataset_stats() -> dict:
 def build_catalog_from_parquet(fdf: pd.DataFrame) -> pd.DataFrame:
     cat = fdf.sort_values(by="valuation_date", ascending=False).groupby("player_id").first().reset_index()
     if "is_current_pl" in cat.columns:
-        cat = cat[cat["is_current_pl"] == True]
+        cat = cat[cat["is_current_pl"]]
     if "club_name" in cat.columns:
         cat = cat[cat["club_name"].isin(CURRENT_2026_PL_CLUBS)]
 

@@ -1,12 +1,12 @@
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from src.utils.paths import LOGS_DIR
 
 # Central logging configuration
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
-stamp = datetime.now(timezone.utc).strftime("%Y_%m_%d_%H_%M_%S")
+stamp = datetime.now(UTC).strftime("%Y_%m_%d_%H_%M_%S")
 log_path = LOGS_DIR / f"{stamp}.log"
 
 logging.basicConfig(

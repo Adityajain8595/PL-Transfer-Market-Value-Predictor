@@ -8,12 +8,12 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-import httpx
-import plotly.graph_objects as go
-import streamlit as st
-from PIL import Image
+import httpx  # noqa: E402
+import plotly.graph_objects as go  # noqa: E402
+import streamlit as st  # noqa: E402
+from PIL import Image  # noqa: E402
 
-from src.serve.dashboard_utils import (
+from src.serve.dashboard_utils import (  # noqa: E402
     get_player_features,
     load_catalog,
     load_dataset_stats,
